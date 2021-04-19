@@ -1,0 +1,6 @@
+.idea/
+.ipynb_checkpoints/
+__pycache__
+*.egg
+*.pt
+*.pth
