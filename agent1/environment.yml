@@ -1,0 +1,4 @@
+name: agent1
+channels:
+  - defaults
+prefix: C:\Users\USER\.conda\envs\agent1

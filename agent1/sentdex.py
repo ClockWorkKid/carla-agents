@@ -33,7 +33,7 @@ import carla
 SHOW_PREVIEW = False
 IM_WIDTH = 640
 IM_HEIGHT = 480
-SECONDS_PER_EPISODE = 40
+SECONDS_PER_EPISODE = 10
 REPLAY_MEMORY_SIZE = 5_000
 MIN_REPLAY_MEMORY_SIZE = 1_000
 MINIBATCH_SIZE = 16
@@ -155,24 +155,24 @@ class CarEnv:
 
     def step(self, action):
         if action == 0:
-            self.vehicle.apply_control(carla.VehicleControl(throttle=0.2, steer=-0.5*self.STEER_AMT))
+            self.vehicle.apply_control(carla.VehicleControl(throttle=1.0, steer=-1*self.STEER_AMT))
         elif action == 1:
-            self.vehicle.apply_control(carla.VehicleControl(throttle=0.7, steer= 0))
+            self.vehicle.apply_control(carla.VehicleControl(throttle=1.0, steer= 0))
         elif action == 2:
-            self.vehicle.apply_control(carla.VehicleControl(throttle=0.2, steer=0.5*self.STEER_AMT))
+            self.vehicle.apply_control(carla.VehicleControl(throttle=1.0, steer=1*self.STEER_AMT))
 
         v = self.vehicle.get_velocity()
         kmh = int(3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2))
 
         if len(self.collision_hist) != 0:
             done = True
-            reward = -100
-        elif kmh < 20:
+            reward = -200
+        elif kmh < 50:
             done = False
-            reward = -0.05
+            reward = -1
         else:
             done = False
-            reward = (kmh-20)*0.01
+            reward = 1
 
         if self.episode_start + SECONDS_PER_EPISODE < time.time():
             done = True
@@ -278,6 +278,7 @@ class DQNAgent:
 
 
 if __name__ == '__main__':
+    print("something")
     FPS = 60
     # For stats
     ep_rewards = [-200]

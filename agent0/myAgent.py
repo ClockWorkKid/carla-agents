@@ -15,7 +15,6 @@ except IndexError:
 
 import carla
 
-
 class CarlaAgent:
     actor_list = []
     client = []
@@ -103,6 +102,9 @@ class CarlaAgent:
         # attach camera callback function
         self.camera.listen(lambda image: camera_callback(image))
 
+    # layer 5 => Traffic Light
+    # layer 6 => Lanes and marks
+    # layer 7 => Roads
     def attach_cameraS(self):
         def semantic_callback(image):
             array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))

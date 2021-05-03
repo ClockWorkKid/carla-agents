@@ -1,15 +1,14 @@
-import random
-from collections import deque
-import numpy as np
-import cv2
-import time
-import tensorflow as tf
-import keras.backend.tensorflow_backend as backend
+from .myAgent import*
 from keras.models import load_model
-from sentdex import CarEnv, MEMORY_FRACTION
 
 
 MODEL_PATH = 'models/Xception_____4.86max___-6.31avg___-9.70min__1618782724.model'
+
+
+# ****************************************************************************************************************** #
+# *********************************************** DQN Agent Testing ************************************************ #
+# ****************************************************************************************************************** #
+
 
 if __name__ == '__main__':
 
@@ -21,14 +20,14 @@ if __name__ == '__main__':
     model = load_model(MODEL_PATH)
 
     # Create environment
-    env = CarEnv()
+    env = CarlaAgent()
 
     # For agent speed measurements - keeps last 60 frametimes
     fps_counter = deque(maxlen=60)
 
     # Initialize predictions - first prediction takes longer as of initialization that has to be done
     # It's better to do a first prediction then before we start iterating over episode steps
-    model.predict(np.ones((1, env.im_height, env.im_width, 3)))
+    model.predict(np.ones((1, IM_HEIGHT, IM_WIDTH, 3)))
 
     # Loop over episodes
     while True:
