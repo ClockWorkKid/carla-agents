@@ -25,12 +25,18 @@ class CarlaAgent:
     camera = []
     cameraS = []
     GNSS = []
+    collision_sensor = []
+    obstacle_sensor = []
+    lane_sensor = []
     control = []
     image = []
     imageS = []
     altitude = 0
     latitude = 0
     longitude = 0
+    collision = []
+    obstacle = []
+    lane = []
 
     def __init__(self):
         # Connect to server
@@ -43,13 +49,12 @@ class CarlaAgent:
         # running.
         self.world = self.client.get_world()
         self.map = self.world.get_map()
-        self.spectator = self.world.get_spectator()
 
         # The world contains the list blueprints that we can use for adding new
         # actors into the simulation.
         self.BP = self.world.get_blueprint_library()
 
-    def spawn_vehicle(self, BP_vehicle=0, color=0, transform=0):
+    def spawn_vehicle(self, transform=0):
         # Now let's filter all the blueprints of type 'vehicle' and choose one
         # at random.
         # BP_vehicle = random.choice(self.BP.filter('vehicle'))
@@ -58,14 +63,13 @@ class CarlaAgent:
         # A blueprint contains the list of attributes that define a vehicle's
         # instance, we can read them and modify some of them. For instance,
         # let's randomize its color.
-        if color == 0:
-            color = random.choice(BP_vehicle.get_attribute('color').recommended_values)
+        color = random.choice(BP_vehicle.get_attribute('color').recommended_values)
         BP_vehicle.set_attribute('color', color)
 
         # Now we need to give an initial transform to the vehicle. We choose a
         # random transform from the list of recommended spawn points of the map.
         if transform == 0:
-            transform = random.choice(self.map.get_spawn_points())
+            transform = random.choice(self.map.get_spwn_points())
 
         my_geolocation = self.map.transform_to_geolocation(transform.location)
         self.latitude = my_geolocation.latitude
@@ -75,6 +79,7 @@ class CarlaAgent:
         # So let's tell the world to spawn the vehicle.
         self.vehicle = self.world.spawn_actor(BP_vehicle, transform)
         # print(transform)
+        self.spectator = self.world.get_spectator()
 
         # It is important to note that the actors we create won't be destroyed
         # unless we call their "destroy" function. If we fail to call "destroy"
@@ -136,6 +141,45 @@ class CarlaAgent:
 
         self.GNSS.listen(lambda gnssData: GNSS_callback(gnssData))
 
+    def attach_observer(self):
+        transform = carla.Transform(carla.Location(x=0, z=0))
+        # --------------
+        # Add collision sensor to ego vehicle.
+        # --------------
+        def col_callback(colli):
+            print("Collision detected:\n" + str(colli) + '\n')
+            self.collision.append(str(colli))
+
+        col_bp = self.BP.find('sensor.other.collision')
+        self.collision_sensor = self.world.spawn_actor(col_bp, transform, attach_to=self.vehicle,
+                                    attachment_type=carla.AttachmentType.Rigid)
+        self.collision_sensor.listen(lambda colli: col_callback(colli))
+
+        # --------------
+        # Add Lane invasion sensor to ego vehicle.
+        # --------------
+        def lane_callback(lane):
+            print("Lane invasion detected:\n" + str(lane) + '\n')
+            self.lane.append(str(lane))
+
+        lane_bp = self.BP.find('sensor.other.lane_invasion')
+        self.lane_sensor = self.world.spawn_actor(lane_bp, transform, attach_to=self.vehicle,
+                                     attachment_type=carla.AttachmentType.Rigid)
+        self.lane_sensor.listen(lambda lane: lane_callback(lane))
+
+        # --------------
+        # Add Obstacle sensor to ego vehicle.
+        # --------------
+        def obs_callback(obs):
+            print("Obstacle detected:\n" + str(obs) + '\n')
+            self.obstacle.append(str(obs))
+
+        obs_bp = self.BP.find('sensor.other.obstacle')
+        obs_bp.set_attribute("only_dynamics", str(True))
+        self.obstacle_sensor = self.world.spawn_actor(obs_bp, transform, attach_to=self.vehicle,
+                                    attachment_type=carla.AttachmentType.Rigid)
+        self.obstacle_sensor.listen(lambda obs: obs_callback(obs))
+
     def autopilot(self, t):
         print("Starting autopilot for " + str(t) + " seconds")
         # Let's put the vehicle to drive around.
@@ -150,7 +194,6 @@ class CarlaAgent:
         self.control = carla.VehicleControl()
 
     def find_vehicle(self):
-        
         spec_trans = self.vehicle.get_transform()
         spec_trans.location.x = spec_trans.location.x + 3
         spec_trans.location.z = spec_trans.location.z + 2
