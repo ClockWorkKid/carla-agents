@@ -60,6 +60,9 @@ class Vehicle:
         array = array[:, :, :3]
         self.imageS = array
 
+    def collision_callback(self, event):
+        self.collision.append(event)
+
     def attach_controller(self):
         self.controller = Controller()
         self.control = carla.VehicleControl()
@@ -116,6 +119,7 @@ class SimulatorSynchronous:
             new_agent = Vehicle()
             self.spawn_vehicle(new_agent)
             self.attach_camera(new_agent)
+            self.attach_collision(new_agent)
             self.agent.append(new_agent)
             self.world.tick()
             print("Vehicle " + str(i) + " spawned")
@@ -171,6 +175,16 @@ class SimulatorSynchronous:
         # print('created %s' % agent.cameraS.type_id)
 
         agent.cameraS.listen(lambda image: agent.semantic_callback(image))
+
+    def attach_collision(self, agent):
+        BP = self.BP.find("sensor.other.collision")
+
+        transform = carla.Transform(carla.Location(x=0, y=0, z=0))
+        agent.collision_sensor = self.world.spawn_actor(BP, transform, attach_to=agent.vehicle)
+        self.actor_list.append(agent.collision_sensor)
+
+        agent.collision_sensor.listen(lambda event: agent.collision_callback(event))
+
 
     def terminate(self):
         print('destroying actors')
